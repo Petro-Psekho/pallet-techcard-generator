@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Генератор технической карты паллетирования</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header no-print">
+    <div>
+      <p class="eyebrow">Техническая документация</p>
+      <h1>Генератор техкарты паллетирования</h1>
+    </div>
+    <p>Заполните параметры упаковки и паллетирования, добавьте изображения Cape Pack и сформируйте печатную техкарту A4.</p>
+  </header>
+
+  <main class="app-layout">
+    <section class="form-panel no-print" aria-label="Форма ввода данных">
+      <form id="palletForm">
+        <fieldset>
+          <legend>Общая информация</legend>
+          <label>Наименование продукта<input type="text" name="productName"></label>
+          <label>Код / артикул продукта<input type="text" name="productCode"></label>
+          <label>Версия техкарты<input type="text" name="cardVersion"></label>
+          <label>Дата разработки<input type="date" name="createdDate"></label>
+          <label>Ответственный<input type="text" name="responsiblePerson"></label>
+          <label>Назначение / рынок<textarea name="purpose" rows="3"></textarea></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Первичная упаковка</legend>
+          <div class="grid-2">
+            <label>Длина, мм<input type="number" name="primaryLength" min="0" step="0.01"></label>
+            <label>Ширина, мм<input type="number" name="primaryWidth" min="0" step="0.01"></label>
+            <label>Высота, мм<input type="number" name="primaryHeight" min="0" step="0.01"></label>
+            <label>Вес единицы, кг<input type="number" name="unitWeight" min="0" step="0.001"></label>
+          </div>
+          <label>Тип первичной упаковки<input type="text" name="primaryType"></label>
+          <label>Особые требования<textarea name="primaryRequirements" rows="3"></textarea></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Групповая упаковка / шоу-бокс</legend>
+          <div class="grid-2">
+            <label>Единиц в группе<input type="number" name="groupUnits" min="0" step="1"></label>
+            <label>Вес группы, кг<input type="number" name="groupWeight" min="0" step="0.001"></label>
+            <label>Длина, мм<input type="number" name="groupLength" min="0" step="0.01"></label>
+            <label>Ширина, мм<input type="number" name="groupWidth" min="0" step="0.01"></label>
+            <label>Высота, мм<input type="number" name="groupHeight" min="0" step="0.01"></label>
+          </div>
+          <label>Тип групповой упаковки<input type="text" name="groupType"></label>
+          <label>Описание укладки<textarea name="groupDescription" rows="3"></textarea></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Транспортный ящик</legend>
+          <div class="grid-2">
+            <label>Единиц в ящике<input type="number" name="unitsPerCase" min="0" step="1"></label>
+            <label>Вес ящика, кг<input type="number" name="caseWeight" min="0" step="0.001"></label>
+            <label>Длина ящика, мм<input type="number" name="caseLength" min="0" step="0.01"></label>
+            <label>Ширина ящика, мм<input type="number" name="caseWidth" min="0" step="0.01"></label>
+            <label>Высота ящика, мм<input type="number" name="caseHeight" min="0" step="0.01"></label>
+            <label>BCT / stacking test
+              <select name="bctTest">
+                <option value="">Не указано</option>
+                <option value="yes">Проведен / соответствует</option>
+                <option value="no">Не проведен</option>
+              </select>
+            </label>
+          </div>
+          <label>Марка / тип гофрокартона<input type="text" name="caseMaterial"></label>
+          <label>Особенности ящика<textarea name="caseNotes" rows="3"></textarea></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Поддон</legend>
+          <div class="grid-2">
+            <label>Длина поддона, мм<input type="number" name="palletLength" min="0" step="0.01"></label>
+            <label>Ширина поддона, мм<input type="number" name="palletWidth" min="0" step="0.01"></label>
+            <label>Высота поддона, мм<input type="number" name="palletHeight" min="0" step="0.01"></label>
+            <label>Вес поддона, кг<input type="number" name="palletWeight" min="0" step="0.001"></label>
+            <label>Допустимая высота, мм<input type="number" name="maxPalletHeight" min="0" step="0.01"></label>
+            <label>Допустимый вес, кг<input type="number" name="maxPalletWeight" min="0" step="0.001"></label>
+          </div>
+          <label>Тип поддона<input type="text" name="palletType"></label>
+          <label>Требования к поддону<textarea name="palletRequirements" rows="3"></textarea></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Паллетирование</legend>
+          <div class="grid-2">
+            <label>Ящиков в слое<input type="number" name="casesPerLayer" min="0" step="1"></label>
+            <label>Количество слоев<input type="number" name="layersCount" min="0" step="1"></label>
+            <label>Занятая длина слоя, мм<input type="number" name="occupiedLayerLength" min="0" step="0.01"></label>
+            <label>Занятая ширина слоя, мм<input type="number" name="occupiedLayerWidth" min="0" step="0.01"></label>
+          </div>
+          <label>Схема укладки<textarea name="palletPattern" rows="3"></textarea></label>
+          <label>Межслойные прокладки / фиксация<textarea name="layerFixation" rows="3"></textarea></label>
+          <label class="checkbox-label"><input type="checkbox" name="doubleStacking"> Разрешено double stacking</label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Контроль качества</legend>
+          <label class="checkbox-label"><input type="checkbox" name="checkLabeling"> Проверена маркировка</label>
+          <label class="checkbox-label"><input type="checkbox" name="checkIntegrity"> Проверена целостность упаковки</label>
+          <label class="checkbox-label"><input type="checkbox" name="checkDimensions"> Проверены габариты паллеты</label>
+          <label class="checkbox-label"><input type="checkbox" name="checkWeight"> Проверен вес паллеты</label>
+          <label class="checkbox-label"><input type="checkbox" name="checkStability"> Проверена устойчивость паллеты</label>
+          <label>Дополнительные проверки<textarea name="qualityNotes" rows="3"></textarea></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Риски и ограничения</legend>
+          <label>Риски<textarea name="risks" rows="4"></textarea></label>
+          <label>Ограничения<textarea name="limitations" rows="4"></textarea></label>
+          <label>Рекомендации<textarea name="recommendations" rows="4"></textarea></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Фото / изображения Cape Pack</legend>
+          <label>Загрузить изображения<input id="imageInput" type="file" accept="image/*" multiple></label>
+          <div id="imageList" class="image-list" aria-live="polite"></div>
+        </fieldset>
+      </form>
+
+      <div class="actions">
+        <button type="button" id="generateBtn">Сгенерировать техкарту</button>
+        <button type="button" id="clearBtn" class="secondary">Очистить форму</button>
+        <button type="button" id="printBtn" class="secondary">Экспорт в PDF</button>
+        <button type="button" id="saveJsonBtn" class="secondary">Сохранить JSON</button>
+        <label class="file-button secondary">Загрузить JSON<input id="jsonInput" type="file" accept="application/json,.json"></label>
+      </div>
+    </section>
+
+    <section class="preview-panel" aria-label="Preview технической карты">
+      <article id="techCard" class="tech-card">
+        <div class="empty-state">
+          <h2>Preview техкарты</h2>
+          <p>Заполните форму и нажмите «Сгенерировать техкарту».</p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
