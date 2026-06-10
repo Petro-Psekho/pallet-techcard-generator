@@ -138,6 +138,22 @@ function validateData(data, calculations) {
 }
 
 function renderTechCard(data, calculations, warnings) {
+  const checklistRows = [
+    ['Проверена маркировка', data.qualityChecks.checkLabeling],
+    ['Проверена целостность упаковки', data.qualityChecks.checkIntegrity],
+    ['Проверены габариты паллеты', data.qualityChecks.checkDimensions],
+    ['Проверен вес паллеты', data.qualityChecks.checkWeight],
+    ['Проверена устойчивость паллеты', data.qualityChecks.checkStability],
+    ['Дополнительные проверки', data.qualityNotes]
+  ];
+  const risksRows = [
+    ['Предупреждения', warnings.length ? warnings.join('\n') : ''],
+    ['Риски', data.risks],
+    ['Ограничения', data.limitations],
+    ['Рекомендации', data.recommendations]
+  ];
+  const imageRows = [['Изображения Cape Pack', data.images.length ? 'Загружены' : '']];
+
   techCard.innerHTML = `
     <h1 class="card-title">ТЕХНИЧЕСКАЯ КАРТА ПАЛЛЕТИРОВАНИЯ</h1>
     ${renderCardMeta([
@@ -203,7 +219,7 @@ function renderTechCard(data, calculations, warnings) {
     ])}
 
     <section class="tech-section">
-      <h2>7. Контрольный чек-лист</h2>
+      ${renderTechSectionHeading('7. Контрольный чек-лист', calculateRowsProgress(checklistRows))}
       ${renderChecklist([
         ['Проверена маркировка', data.qualityChecks.checkLabeling],
         ['Проверена целостность упаковки', data.qualityChecks.checkIntegrity],
@@ -215,7 +231,7 @@ function renderTechCard(data, calculations, warnings) {
     </section>
 
     <section class="tech-section">
-      <h2>8. Риски и ограничения</h2>
+      ${renderTechSectionHeading('8. Риски и ограничения', calculateRowsProgress(risksRows))}
       ${warnings.length ? renderWarnings(warnings) : ''}
       ${renderSmallTable([
         ['Риски', data.risks],
@@ -225,12 +241,12 @@ function renderTechCard(data, calculations, warnings) {
     </section>
 
     <section class="tech-section">
-      <h2>9. Изображения / приложения</h2>
+      ${renderTechSectionHeading('9. Изображения / приложения', calculateRowsProgress(imageRows))}
       ${renderImages(data.images)}
     </section>
 
     <section class="tech-section">
-      <h2>10. Блок подписей</h2>
+      ${renderTechSectionHeading('10. Блок подписей', null)}
       <div class="signature-grid">
         <div class="signature-cell">Разработал</div>
         <div class="signature-cell">Проверил</div>
@@ -256,6 +272,7 @@ function handleImageUpload(event) {
   Promise.all(readers).then(images => {
     uploadedImages = uploadedImages.concat(images);
     renderImageList();
+    updateSectionProgress();
   });
 }
 
@@ -283,6 +300,7 @@ function loadFromJson(event) {
       restoreFormData(data);
       uploadedImages = Array.isArray(data.images) ? data.images : [];
       renderImageList();
+      updateSectionProgress();
       generateTechCard();
     } catch (error) {
       alert('Не удалось загрузить JSON. Проверьте структуру файла.');
@@ -322,12 +340,51 @@ function clearForm() {
   uploadedImages = [];
   imageInput.value = '';
   renderImageList();
+  updateSectionProgress();
   techCard.innerHTML = `
     <div class="empty-state">
       <h2>Preview техкарты</h2>
       <p>Заполните форму и нажмите «Сгенерировать техкарту».</p>
     </div>
   `;
+}
+
+function initSectionProgress() {
+  form.querySelectorAll('fieldset').forEach(fieldset => {
+    const legend = fieldset.querySelector('legend');
+    if (!legend || legend.querySelector('.section-progress')) return;
+
+    const title = legend.textContent.trim();
+    legend.innerHTML = `
+      <span>${escapeHtml(title)}</span>
+      <span class="section-progress" aria-label="Заполнено 0 процентов">0%</span>
+    `;
+  });
+
+  updateSectionProgress();
+}
+
+function updateSectionProgress() {
+  form.querySelectorAll('fieldset').forEach(fieldset => {
+    const progress = fieldset.querySelector('.section-progress');
+    if (!progress) return;
+
+    const controls = Array.from(fieldset.querySelectorAll('input, select, textarea'))
+      .filter(control => control.type !== 'file');
+    const totalFields = controls.length || (fieldset.contains(imageInput) ? 1 : 0);
+    const filledFields = controls.filter(isControlFilled).length
+      + (fieldset.contains(imageInput) && uploadedImages.length ? 1 : 0);
+    const percent = totalFields ? Math.round((filledFields / totalFields) * 100) : 0;
+
+    progress.textContent = `${percent}%`;
+    progress.setAttribute('aria-label', `Заполнено ${percent} процентов`);
+    progress.classList.toggle('complete', percent === 100);
+  });
+}
+
+function isControlFilled(control) {
+  if (control.type === 'checkbox') return control.checked;
+  return String(control.value || '').trim() !== '';
 }
 
 function renderImageList() {
@@ -347,10 +404,21 @@ function renderImageList() {
 function renderSection(title, rows) {
   return `
     <section class="tech-section">
-      <h2>${title}</h2>
+      ${renderTechSectionHeading(title, calculateRowsProgress(rows))}
       ${renderSmallTable(rows)}
     </section>
   `;
+}
+
+function renderTechSectionHeading(title, percent) {
+  const progress = percent === null ? '' : `<span class="tech-section-progress">${percent}%</span>`;
+  return `<h2><span>${escapeHtml(title)}</span>${progress}</h2>`;
+}
+
+function calculateRowsProgress(rows) {
+  if (!rows.length) return 0;
+  const filledRows = rows.filter(([, value]) => isRenderableValue(value));
+  return Math.round((filledRows.length / rows.length) * 100);
 }
 
 function renderCardMeta(rows) {
@@ -504,5 +572,8 @@ document.getElementById('printBtn').addEventListener('click', printTechCard);
 document.getElementById('saveJsonBtn').addEventListener('click', saveToJson);
 imageInput.addEventListener('change', handleImageUpload);
 jsonInput.addEventListener('change', loadFromJson);
+form.addEventListener('input', updateSectionProgress);
+form.addEventListener('change', updateSectionProgress);
 
 renderImageList();
+initSectionProgress();
