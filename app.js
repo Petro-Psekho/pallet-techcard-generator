@@ -18,6 +18,39 @@ let groupImages = [];
 let caseImages = [];
 let palletPatternImages = [];
 
+const imageGroups = {
+  general: {
+    getImages: () => uploadedImages,
+    setImages: images => { uploadedImages = images; },
+    render: renderImageList,
+    input: imageInput
+  },
+  primary: {
+    getImages: () => primaryImages,
+    setImages: images => { primaryImages = images; },
+    render: renderPrimaryImageList,
+    input: primaryImageInput
+  },
+  group: {
+    getImages: () => groupImages,
+    setImages: images => { groupImages = images; },
+    render: renderGroupImageList,
+    input: groupImageInput
+  },
+  case: {
+    getImages: () => caseImages,
+    setImages: images => { caseImages = images; },
+    render: renderCaseImageList,
+    input: caseImageInput
+  },
+  palletPattern: {
+    getImages: () => palletPatternImages,
+    setImages: images => { palletPatternImages = images; },
+    render: renderPalletPatternImageList,
+    input: palletPatternImageInput
+  }
+};
+
 const fieldLabels = {
   productName: 'Наименование продукта',
   productCode: 'Код / артикул продукта',
@@ -510,36 +543,26 @@ function getFilledSectionImageFieldsCount(fieldset) {
 }
 
 function renderImageList() {
-  if (!uploadedImages.length) {
-    imageList.innerHTML = '<p class="muted">Изображения не загружены.</p>';
-    return;
-  }
-
-  imageList.innerHTML = uploadedImages.map((image, index) => `
-    <div class="image-list-item">
-      <img src="${image.src}" alt="${escapeHtml(image.name)}">
-      <span>${index + 1}. ${escapeHtml(image.name)}</span>
-    </div>
-  `).join('');
+  renderInputImageList(imageList, uploadedImages, 'Изображения не загружены.', 'general');
 }
 
 function renderPrimaryImageList() {
-  renderInputImageList(primaryImageList, primaryImages, 'Фото первичной упаковки не загружены.');
+  renderInputImageList(primaryImageList, primaryImages, 'Фото первичной упаковки не загружены.', 'primary');
 }
 
 function renderGroupImageList() {
-  renderInputImageList(groupImageList, groupImages, 'Фото групповой упаковки не загружены.');
+  renderInputImageList(groupImageList, groupImages, 'Фото групповой упаковки не загружены.', 'group');
 }
 
 function renderCaseImageList() {
-  renderInputImageList(caseImageList, caseImages, 'Фото транспортного ящика не загружены.');
+  renderInputImageList(caseImageList, caseImages, 'Фото транспортного ящика не загружены.', 'case');
 }
 
 function renderPalletPatternImageList() {
-  renderInputImageList(palletPatternImageList, palletPatternImages, 'Фото схемы укладки не загружены.');
+  renderInputImageList(palletPatternImageList, palletPatternImages, 'Фото схемы укладки не загружены.', 'palletPattern');
 }
 
-function renderInputImageList(container, images, emptyText) {
+function renderInputImageList(container, images, emptyText, groupKey) {
   if (!images.length) {
     container.innerHTML = `<p class="muted">${escapeHtml(emptyText)}</p>`;
     return;
@@ -549,8 +572,31 @@ function renderInputImageList(container, images, emptyText) {
     <div class="image-list-item">
       <img src="${image.src}" alt="${escapeHtml(image.name)}">
       <span>${index + 1}. ${escapeHtml(image.name)}</span>
+      <button type="button" class="remove-image-button" data-image-group="${groupKey}" data-image-index="${index}" aria-label="Удалить ${escapeHtml(image.name)}">Удалить</button>
     </div>
   `).join('');
+}
+
+function removeImage(groupKey, imageIndex) {
+  const group = imageGroups[groupKey];
+  if (!group) return;
+
+  const images = group.getImages().filter((_, index) => index !== imageIndex);
+  group.setImages(images);
+  group.input.value = '';
+  group.render();
+  updateSectionProgress();
+
+  if (!techCard.querySelector('.empty-state')) {
+    generateTechCard();
+  }
+}
+
+function handleImageListClick(event) {
+  const button = event.target.closest('.remove-image-button');
+  if (!button) return;
+
+  removeImage(button.dataset.imageGroup, Number(button.dataset.imageIndex));
 }
 
 function renderSection(title, rows, extraHtml = '', progressRows = rows) {
@@ -728,6 +774,11 @@ primaryImageInput.addEventListener('change', handlePrimaryImageUpload);
 groupImageInput.addEventListener('change', handleGroupImageUpload);
 caseImageInput.addEventListener('change', handleCaseImageUpload);
 palletPatternImageInput.addEventListener('change', handlePalletPatternImageUpload);
+imageList.addEventListener('click', handleImageListClick);
+primaryImageList.addEventListener('click', handleImageListClick);
+groupImageList.addEventListener('click', handleImageListClick);
+caseImageList.addEventListener('click', handleImageListClick);
+palletPatternImageList.addEventListener('click', handleImageListClick);
 jsonInput.addEventListener('change', loadFromJson);
 form.addEventListener('input', updateSectionProgress);
 form.addEventListener('change', updateSectionProgress);

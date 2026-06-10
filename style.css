@@ -222,12 +222,26 @@ button.secondary,
   border-radius: 8px;
 }
 
+.image-list-item span {
+  flex: 1;
+  min-width: 0;
+}
+
 .image-list-item img {
   width: 58px;
   height: 44px;
   object-fit: contain;
   background: #fff;
   border: 1px solid var(--line);
+}
+
+.remove-image-button {
+  min-height: 32px;
+  padding: 6px 10px;
+  border-color: #fecdca;
+  background: #fff;
+  color: var(--danger);
+  font-size: 12px;
 }
 
 .preview-panel {
