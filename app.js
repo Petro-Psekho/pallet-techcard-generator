@@ -336,15 +336,31 @@ function readImagesFromInput(input) {
 
 function saveToJson() {
   const data = collectFormData();
+  const productCode = String(data.productCode || '').trim();
+
+  if (!productCode) {
+    alert('Заполните поле «Код / артикул продукта» перед сохранением JSON.');
+    form.elements.productCode.focus();
+    return;
+  }
+
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  const fileName = `techcard-pallet-${new Date().toISOString().slice(0, 10)}.json`;
+  const fileName = `${sanitizeFileName(productCode)}.json`;
 
   link.href = url;
   link.download = fileName;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function sanitizeFileName(value) {
+  return value
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '-')
+    .replace(/\s+/g, '_')
+    .replace(/-+/g, '-')
+    .replace(/^[-_.]+|[-_.]+$/g, '') || 'techcard';
 }
 
 function loadFromJson(event) {
