@@ -23,7 +23,6 @@ const fieldLabels = {
   productCode: 'Код / артикул продукта',
   cardVersion: 'Версия техкарты',
   createdDate: 'Дата разработки',
-  responsiblePerson: 'Ответственный',
   purpose: 'Назначение / рынок',
   primaryType: 'Тип первичной упаковки',
   primaryLength: 'Длина первичной упаковки, мм',
@@ -221,7 +220,6 @@ function renderTechCard(data, calculations, warnings) {
       ['Код / артикул продукта', data.productCode],
       ['Версия техкарты', data.cardVersion],
       ['Дата разработки', formatDate(data.createdDate)],
-      ['Ответственный', data.responsiblePerson],
       ['Назначение / рынок', data.purpose]
     ])}
 
