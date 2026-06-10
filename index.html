@@ -96,6 +96,8 @@
             <label>Занятая ширина слоя, мм<input type="number" name="occupiedLayerWidth" min="0" step="0.01"></label>
           </div>
           <label>Схема укладки<textarea name="palletPattern" rows="3"></textarea></label>
+          <label>Фото схемы укладки<input id="palletPatternImageInput" type="file" accept="image/*" multiple></label>
+          <div id="palletPatternImageList" class="image-list" aria-live="polite"></div>
           <label>Межслойные прокладки / фиксация<textarea name="layerFixation" rows="3"></textarea></label>
           <label class="checkbox-label"><input type="checkbox" name="doubleStacking"> Разрешено double stacking</label>
         </fieldset>

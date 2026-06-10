@@ -2,9 +2,12 @@ const form = document.getElementById('palletForm');
 const techCard = document.getElementById('techCard');
 const imageInput = document.getElementById('imageInput');
 const imageList = document.getElementById('imageList');
+const palletPatternImageInput = document.getElementById('palletPatternImageInput');
+const palletPatternImageList = document.getElementById('palletPatternImageList');
 const jsonInput = document.getElementById('jsonInput');
 
 let uploadedImages = [];
+let palletPatternImages = [];
 
 const fieldLabels = {
   productName: 'Наименование продукта',
@@ -70,6 +73,7 @@ function collectFormData() {
   }
 
   data.images = uploadedImages;
+  data.palletPatternImages = palletPatternImages;
   data.qualityChecks = {
     checkLabeling: form.elements.checkLabeling.checked,
     checkIntegrity: form.elements.checkIntegrity.checked,
@@ -138,6 +142,20 @@ function validateData(data, calculations) {
 }
 
 function renderTechCard(data, calculations, warnings) {
+  const palletRows = [
+    ['Ящиков в слое', data.casesPerLayer],
+    ['Количество слоев', data.layersCount],
+    ['Всего ящиков на паллете', formatNumber(calculations.totalCases)],
+    ['Всего единиц на паллете', formatNumber(calculations.totalUnits)],
+    ['Занятая площадь слоя, мм', dimensions(data.occupiedLayerLength, data.occupiedLayerWidth, '')],
+    ['Высота паллеты без поддона, мм', formatNumber(calculations.palletHeightWithoutPallet)],
+    ['Общая высота паллеты, мм', formatNumber(calculations.totalPalletHeight)],
+    ['Вес паллеты, кг', formatNumber(calculations.totalPalletWeight)],
+    ['Схема укладки', data.palletPattern],
+    ['Фото схемы укладки', data.palletPatternImages.length ? 'Загружены' : ''],
+    ['Межслойные прокладки / фиксация', data.layerFixation],
+    ['Double stacking', data.doubleStacking ? 'Разрешено' : '']
+  ];
   const checklistRows = [
     ['Проверена маркировка', data.qualityChecks.checkLabeling],
     ['Проверена целостность упаковки', data.qualityChecks.checkIntegrity],
@@ -204,19 +222,7 @@ function renderTechCard(data, calculations, warnings) {
       ['Требования к поддону', data.palletRequirements]
     ])}
 
-    ${renderSection('6. Схема паллетирования', [
-      ['Ящиков в слое', data.casesPerLayer],
-      ['Количество слоев', data.layersCount],
-      ['Всего ящиков на паллете', formatNumber(calculations.totalCases)],
-      ['Всего единиц на паллете', formatNumber(calculations.totalUnits)],
-      ['Занятая площадь слоя, мм', dimensions(data.occupiedLayerLength, data.occupiedLayerWidth, '')],
-      ['Высота паллеты без поддона, мм', formatNumber(calculations.palletHeightWithoutPallet)],
-      ['Общая высота паллеты, мм', formatNumber(calculations.totalPalletHeight)],
-      ['Вес паллеты, кг', formatNumber(calculations.totalPalletWeight)],
-      ['Схема укладки', data.palletPattern],
-      ['Межслойные прокладки / фиксация', data.layerFixation],
-      ['Double stacking', data.doubleStacking ? 'Разрешено' : '']
-    ])}
+    ${renderSection('6. Схема паллетирования', palletRows, renderImages(data.palletPatternImages, 'Фото схемы укладки'), palletRows)}
 
     <section class="tech-section">
       ${renderTechSectionHeading('7. Контрольный чек-лист', calculateRowsProgress(checklistRows))}
@@ -242,7 +248,7 @@ function renderTechCard(data, calculations, warnings) {
 
     <section class="tech-section">
       ${renderTechSectionHeading('9. Изображения / приложения', calculateRowsProgress(imageRows))}
-      ${renderImages(data.images)}
+      ${renderImages(data.images, 'Изображение Cape Pack')}
     </section>
 
     <section class="tech-section">
@@ -258,7 +264,23 @@ function renderTechCard(data, calculations, warnings) {
 }
 
 function handleImageUpload(event) {
-  const files = Array.from(event.target.files || []);
+  readImagesFromInput(event.target).then(images => {
+    uploadedImages = uploadedImages.concat(images);
+    renderImageList();
+    updateSectionProgress();
+  });
+}
+
+function handlePalletPatternImageUpload(event) {
+  readImagesFromInput(event.target).then(images => {
+    palletPatternImages = palletPatternImages.concat(images);
+    renderPalletPatternImageList();
+    updateSectionProgress();
+  });
+}
+
+function readImagesFromInput(input) {
+  const files = Array.from(input.files || []);
   const readers = files.map(file => new Promise(resolve => {
     const reader = new FileReader();
     reader.onload = () => resolve({
@@ -269,11 +291,7 @@ function handleImageUpload(event) {
     reader.readAsDataURL(file);
   }));
 
-  Promise.all(readers).then(images => {
-    uploadedImages = uploadedImages.concat(images);
-    renderImageList();
-    updateSectionProgress();
-  });
+  return Promise.all(readers);
 }
 
 function saveToJson() {
@@ -299,7 +317,9 @@ function loadFromJson(event) {
       const data = JSON.parse(reader.result);
       restoreFormData(data);
       uploadedImages = Array.isArray(data.images) ? data.images : [];
+      palletPatternImages = Array.isArray(data.palletPatternImages) ? data.palletPatternImages : [];
       renderImageList();
+      renderPalletPatternImageList();
       updateSectionProgress();
       generateTechCard();
     } catch (error) {
@@ -338,8 +358,11 @@ function restoreFormData(data) {
 function clearForm() {
   form.reset();
   uploadedImages = [];
+  palletPatternImages = [];
   imageInput.value = '';
+  palletPatternImageInput.value = '';
   renderImageList();
+  renderPalletPatternImageList();
   updateSectionProgress();
   techCard.innerHTML = `
     <div class="empty-state">
@@ -371,9 +394,10 @@ function updateSectionProgress() {
 
     const controls = Array.from(fieldset.querySelectorAll('input, select, textarea'))
       .filter(control => control.type !== 'file');
-    const totalFields = controls.length || (fieldset.contains(imageInput) ? 1 : 0);
+    const sectionImageFields = getSectionImageFieldsCount(fieldset);
+    const totalFields = controls.length + sectionImageFields;
     const filledFields = controls.filter(isControlFilled).length
-      + (fieldset.contains(imageInput) && uploadedImages.length ? 1 : 0);
+      + getFilledSectionImageFieldsCount(fieldset);
     const percent = totalFields ? Math.round((filledFields / totalFields) * 100) : 0;
 
     progress.textContent = `${percent}%`;
@@ -385,6 +409,20 @@ function updateSectionProgress() {
 function isControlFilled(control) {
   if (control.type === 'checkbox') return control.checked;
   return String(control.value || '').trim() !== '';
+}
+
+function getSectionImageFieldsCount(fieldset) {
+  let count = 0;
+  if (fieldset.contains(imageInput)) count += 1;
+  if (fieldset.contains(palletPatternImageInput)) count += 1;
+  return count;
+}
+
+function getFilledSectionImageFieldsCount(fieldset) {
+  let count = 0;
+  if (fieldset.contains(imageInput) && uploadedImages.length) count += 1;
+  if (fieldset.contains(palletPatternImageInput) && palletPatternImages.length) count += 1;
+  return count;
 }
 
 function renderImageList() {
@@ -401,11 +439,26 @@ function renderImageList() {
   `).join('');
 }
 
-function renderSection(title, rows) {
+function renderPalletPatternImageList() {
+  if (!palletPatternImages.length) {
+    palletPatternImageList.innerHTML = '<p class="muted">Фото схемы укладки не загружены.</p>';
+    return;
+  }
+
+  palletPatternImageList.innerHTML = palletPatternImages.map((image, index) => `
+    <div class="image-list-item">
+      <img src="${image.src}" alt="${escapeHtml(image.name)}">
+      <span>${index + 1}. ${escapeHtml(image.name)}</span>
+    </div>
+  `).join('');
+}
+
+function renderSection(title, rows, extraHtml = '', progressRows = rows) {
   return `
     <section class="tech-section">
-      ${renderTechSectionHeading(title, calculateRowsProgress(rows))}
+      ${renderTechSectionHeading(title, calculateRowsProgress(progressRows))}
       ${renderSmallTable(rows)}
+      ${extraHtml}
     </section>
   `;
 }
@@ -473,7 +526,7 @@ function renderChecklist(items) {
   `;
 }
 
-function renderImages(images) {
+function renderImages(images, fallbackCaption = 'Изображение') {
   if (!images || !images.length) {
     return '';
   }
@@ -483,7 +536,7 @@ function renderImages(images) {
       ${images.map((image, index) => `
         <figure class="image-card">
           <img src="${image.src}" alt="${escapeHtml(image.name || `Изображение ${index + 1}`)}">
-          <figcaption>${index + 1}. ${escapeHtml(image.name || 'Изображение Cape Pack')}</figcaption>
+          <figcaption>${index + 1}. ${escapeHtml(image.name || fallbackCaption)}</figcaption>
         </figure>
       `).join('')}
     </div>
@@ -571,9 +624,11 @@ document.getElementById('clearBtn').addEventListener('click', clearForm);
 document.getElementById('printBtn').addEventListener('click', printTechCard);
 document.getElementById('saveJsonBtn').addEventListener('click', saveToJson);
 imageInput.addEventListener('change', handleImageUpload);
+palletPatternImageInput.addEventListener('change', handlePalletPatternImageUpload);
 jsonInput.addEventListener('change', loadFromJson);
 form.addEventListener('input', updateSectionProgress);
 form.addEventListener('change', updateSectionProgress);
 
 renderImageList();
+renderPalletPatternImageList();
 initSectionProgress();
