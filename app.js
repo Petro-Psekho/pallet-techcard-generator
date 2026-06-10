@@ -2,11 +2,20 @@ const form = document.getElementById('palletForm');
 const techCard = document.getElementById('techCard');
 const imageInput = document.getElementById('imageInput');
 const imageList = document.getElementById('imageList');
+const primaryImageInput = document.getElementById('primaryImageInput');
+const primaryImageList = document.getElementById('primaryImageList');
+const groupImageInput = document.getElementById('groupImageInput');
+const groupImageList = document.getElementById('groupImageList');
+const caseImageInput = document.getElementById('caseImageInput');
+const caseImageList = document.getElementById('caseImageList');
 const palletPatternImageInput = document.getElementById('palletPatternImageInput');
 const palletPatternImageList = document.getElementById('palletPatternImageList');
 const jsonInput = document.getElementById('jsonInput');
 
 let uploadedImages = [];
+let primaryImages = [];
+let groupImages = [];
+let caseImages = [];
 let palletPatternImages = [];
 
 const fieldLabels = {
@@ -73,6 +82,9 @@ function collectFormData() {
   }
 
   data.images = uploadedImages;
+  data.primaryImages = primaryImages;
+  data.groupImages = groupImages;
+  data.caseImages = caseImages;
   data.palletPatternImages = palletPatternImages;
   data.qualityChecks = {
     checkLabeling: form.elements.checkLabeling.checked,
@@ -142,6 +154,30 @@ function validateData(data, calculations) {
 }
 
 function renderTechCard(data, calculations, warnings) {
+  const primaryRows = [
+    ['Тип первичной упаковки', data.primaryType],
+    ['Габариты первичной упаковки, мм', dimensions(data.primaryLength, data.primaryWidth, data.primaryHeight)],
+    ['Вес единицы, кг', data.unitWeight],
+    ['Особые требования', data.primaryRequirements],
+    ['Фото первичной упаковки', data.primaryImages.length ? 'Загружены' : '']
+  ];
+  const groupRows = [
+    ['Тип групповой упаковки / шоу-бокса', data.groupType],
+    ['Единиц в группе', data.groupUnits],
+    ['Габариты группы, мм', dimensions(data.groupLength, data.groupWidth, data.groupHeight)],
+    ['Вес группы, кг', data.groupWeight],
+    ['Описание укладки', data.groupDescription],
+    ['Фото групповой упаковки / шоу-бокса', data.groupImages.length ? 'Загружены' : '']
+  ];
+  const caseRows = [
+    ['Единиц в ящике', data.unitsPerCase],
+    ['Габариты ящика, мм', dimensions(data.caseLength, data.caseWidth, data.caseHeight)],
+    ['Вес ящика, кг', data.caseWeight],
+    ['Марка / тип гофрокартона', data.caseMaterial],
+    ['BCT / stacking test', bctLabel(data.bctTest)],
+    ['Особенности ящика', data.caseNotes],
+    ['Фото транспортного ящика', data.caseImages.length ? 'Загружены' : '']
+  ];
   const palletRows = [
     ['Ящиков в слое', data.casesPerLayer],
     ['Количество слоев', data.layersCount],
@@ -170,7 +206,7 @@ function renderTechCard(data, calculations, warnings) {
     ['Ограничения', data.limitations],
     ['Рекомендации', data.recommendations]
   ];
-  const imageRows = [['Изображения Cape Pack', data.images.length ? 'Загружены' : '']];
+  const imageRows = [['Изображения', data.images.length ? 'Загружены' : '']];
 
   techCard.innerHTML = `
     <h1 class="card-title">ТЕХНИЧЕСКАЯ КАРТА ПАЛЛЕТИРОВАНИЯ</h1>
@@ -189,29 +225,11 @@ function renderTechCard(data, calculations, warnings) {
       ['Назначение / рынок', data.purpose]
     ])}
 
-    ${renderSection('2. Исходные данные продукта', [
-      ['Тип первичной упаковки', data.primaryType],
-      ['Габариты первичной упаковки, мм', dimensions(data.primaryLength, data.primaryWidth, data.primaryHeight)],
-      ['Вес единицы, кг', data.unitWeight],
-      ['Особые требования', data.primaryRequirements]
-    ])}
+    ${renderSection('2. Исходные данные продукта', primaryRows, renderImages(data.primaryImages, 'Фото первичной упаковки'), primaryRows)}
 
-    ${renderSection('3. Данные по групповой упаковке', [
-      ['Тип групповой упаковки / шоу-бокса', data.groupType],
-      ['Единиц в группе', data.groupUnits],
-      ['Габариты группы, мм', dimensions(data.groupLength, data.groupWidth, data.groupHeight)],
-      ['Вес группы, кг', data.groupWeight],
-      ['Описание укладки', data.groupDescription]
-    ])}
+    ${renderSection('3. Данные по групповой упаковке', groupRows, renderImages(data.groupImages, 'Фото групповой упаковки'), groupRows)}
 
-    ${renderSection('4. Данные по транспортному ящику', [
-      ['Единиц в ящике', data.unitsPerCase],
-      ['Габариты ящика, мм', dimensions(data.caseLength, data.caseWidth, data.caseHeight)],
-      ['Вес ящика, кг', data.caseWeight],
-      ['Марка / тип гофрокартона', data.caseMaterial],
-      ['BCT / stacking test', bctLabel(data.bctTest)],
-      ['Особенности ящика', data.caseNotes]
-    ])}
+    ${renderSection('4. Данные по транспортному ящику', caseRows, renderImages(data.caseImages, 'Фото транспортного ящика'), caseRows)}
 
     ${renderSection('5. Данные по поддону', [
       ['Тип поддона', data.palletType],
@@ -248,7 +266,7 @@ function renderTechCard(data, calculations, warnings) {
 
     <section class="tech-section">
       ${renderTechSectionHeading('9. Изображения / приложения', calculateRowsProgress(imageRows))}
-      ${renderImages(data.images, 'Изображение Cape Pack')}
+      ${renderImages(data.images, 'Изображение')}
     </section>
 
     <section class="tech-section">
@@ -267,6 +285,30 @@ function handleImageUpload(event) {
   readImagesFromInput(event.target).then(images => {
     uploadedImages = uploadedImages.concat(images);
     renderImageList();
+    updateSectionProgress();
+  });
+}
+
+function handlePrimaryImageUpload(event) {
+  readImagesFromInput(event.target).then(images => {
+    primaryImages = primaryImages.concat(images);
+    renderPrimaryImageList();
+    updateSectionProgress();
+  });
+}
+
+function handleGroupImageUpload(event) {
+  readImagesFromInput(event.target).then(images => {
+    groupImages = groupImages.concat(images);
+    renderGroupImageList();
+    updateSectionProgress();
+  });
+}
+
+function handleCaseImageUpload(event) {
+  readImagesFromInput(event.target).then(images => {
+    caseImages = caseImages.concat(images);
+    renderCaseImageList();
     updateSectionProgress();
   });
 }
@@ -317,8 +359,14 @@ function loadFromJson(event) {
       const data = JSON.parse(reader.result);
       restoreFormData(data);
       uploadedImages = Array.isArray(data.images) ? data.images : [];
+      primaryImages = Array.isArray(data.primaryImages) ? data.primaryImages : [];
+      groupImages = Array.isArray(data.groupImages) ? data.groupImages : [];
+      caseImages = Array.isArray(data.caseImages) ? data.caseImages : [];
       palletPatternImages = Array.isArray(data.palletPatternImages) ? data.palletPatternImages : [];
       renderImageList();
+      renderPrimaryImageList();
+      renderGroupImageList();
+      renderCaseImageList();
       renderPalletPatternImageList();
       updateSectionProgress();
       generateTechCard();
@@ -358,10 +406,19 @@ function restoreFormData(data) {
 function clearForm() {
   form.reset();
   uploadedImages = [];
+  primaryImages = [];
+  groupImages = [];
+  caseImages = [];
   palletPatternImages = [];
   imageInput.value = '';
+  primaryImageInput.value = '';
+  groupImageInput.value = '';
+  caseImageInput.value = '';
   palletPatternImageInput.value = '';
   renderImageList();
+  renderPrimaryImageList();
+  renderGroupImageList();
+  renderCaseImageList();
   renderPalletPatternImageList();
   updateSectionProgress();
   techCard.innerHTML = `
@@ -414,6 +471,9 @@ function isControlFilled(control) {
 function getSectionImageFieldsCount(fieldset) {
   let count = 0;
   if (fieldset.contains(imageInput)) count += 1;
+  if (fieldset.contains(primaryImageInput)) count += 1;
+  if (fieldset.contains(groupImageInput)) count += 1;
+  if (fieldset.contains(caseImageInput)) count += 1;
   if (fieldset.contains(palletPatternImageInput)) count += 1;
   return count;
 }
@@ -421,6 +481,9 @@ function getSectionImageFieldsCount(fieldset) {
 function getFilledSectionImageFieldsCount(fieldset) {
   let count = 0;
   if (fieldset.contains(imageInput) && uploadedImages.length) count += 1;
+  if (fieldset.contains(primaryImageInput) && primaryImages.length) count += 1;
+  if (fieldset.contains(groupImageInput) && groupImages.length) count += 1;
+  if (fieldset.contains(caseImageInput) && caseImages.length) count += 1;
   if (fieldset.contains(palletPatternImageInput) && palletPatternImages.length) count += 1;
   return count;
 }
@@ -439,13 +502,29 @@ function renderImageList() {
   `).join('');
 }
 
+function renderPrimaryImageList() {
+  renderInputImageList(primaryImageList, primaryImages, 'Фото первичной упаковки не загружены.');
+}
+
+function renderGroupImageList() {
+  renderInputImageList(groupImageList, groupImages, 'Фото групповой упаковки не загружены.');
+}
+
+function renderCaseImageList() {
+  renderInputImageList(caseImageList, caseImages, 'Фото транспортного ящика не загружены.');
+}
+
 function renderPalletPatternImageList() {
-  if (!palletPatternImages.length) {
-    palletPatternImageList.innerHTML = '<p class="muted">Фото схемы укладки не загружены.</p>';
+  renderInputImageList(palletPatternImageList, palletPatternImages, 'Фото схемы укладки не загружены.');
+}
+
+function renderInputImageList(container, images, emptyText) {
+  if (!images.length) {
+    container.innerHTML = `<p class="muted">${escapeHtml(emptyText)}</p>`;
     return;
   }
 
-  palletPatternImageList.innerHTML = palletPatternImages.map((image, index) => `
+  container.innerHTML = images.map((image, index) => `
     <div class="image-list-item">
       <img src="${image.src}" alt="${escapeHtml(image.name)}">
       <span>${index + 1}. ${escapeHtml(image.name)}</span>
@@ -624,11 +703,17 @@ document.getElementById('clearBtn').addEventListener('click', clearForm);
 document.getElementById('printBtn').addEventListener('click', printTechCard);
 document.getElementById('saveJsonBtn').addEventListener('click', saveToJson);
 imageInput.addEventListener('change', handleImageUpload);
+primaryImageInput.addEventListener('change', handlePrimaryImageUpload);
+groupImageInput.addEventListener('change', handleGroupImageUpload);
+caseImageInput.addEventListener('change', handleCaseImageUpload);
 palletPatternImageInput.addEventListener('change', handlePalletPatternImageUpload);
 jsonInput.addEventListener('change', loadFromJson);
 form.addEventListener('input', updateSectionProgress);
 form.addEventListener('change', updateSectionProgress);
 
 renderImageList();
+renderPrimaryImageList();
+renderGroupImageList();
+renderCaseImageList();
 renderPalletPatternImageList();
 initSectionProgress();

@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Генератор технической карты паллетирования</title>
+  <title>Технологическая карта упаковки продукта</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="app-header no-print">
     <div>
       <p class="eyebrow">Техническая документация</p>
-      <h1>Генератор техкарты паллетирования</h1>
+      <h1>Технологическая карта упаковки продукта</h1>
     </div>
-    <p>Заполните параметры упаковки и паллетирования, добавьте изображения Cape Pack и сформируйте печатную техкарту A4.</p>
+    <p>Заполните параметры упаковки и паллетирования, добавьте изображения и сформируйте печатную техкарту A4.</p>
   </header>
 
   <main class="app-layout">
@@ -38,6 +38,8 @@
           </div>
           <label>Тип первичной упаковки<input type="text" name="primaryType"></label>
           <label>Особые требования<textarea name="primaryRequirements" rows="3"></textarea></label>
+          <label>Фото первичной упаковки<input id="primaryImageInput" type="file" accept="image/*" multiple></label>
+          <div id="primaryImageList" class="image-list" aria-live="polite"></div>
         </fieldset>
 
         <fieldset>
@@ -51,6 +53,8 @@
           </div>
           <label>Тип групповой упаковки<input type="text" name="groupType"></label>
           <label>Описание укладки<textarea name="groupDescription" rows="3"></textarea></label>
+          <label>Фото групповой упаковки / шоу-бокса<input id="groupImageInput" type="file" accept="image/*" multiple></label>
+          <div id="groupImageList" class="image-list" aria-live="polite"></div>
         </fieldset>
 
         <fieldset>
@@ -71,6 +75,8 @@
           </div>
           <label>Марка / тип гофрокартона<input type="text" name="caseMaterial"></label>
           <label>Особенности ящика<textarea name="caseNotes" rows="3"></textarea></label>
+          <label>Фото транспортного ящика<input id="caseImageInput" type="file" accept="image/*" multiple></label>
+          <div id="caseImageList" class="image-list" aria-live="polite"></div>
         </fieldset>
 
         <fieldset>
@@ -120,7 +126,7 @@
         </fieldset>
 
         <fieldset>
-          <legend>Фото / изображения Cape Pack</legend>
+          <legend>Фото / изображения</legend>
           <label>Загрузить изображения<input id="imageInput" type="file" accept="image/*" multiple></label>
           <div id="imageList" class="image-list" aria-live="polite"></div>
         </fieldset>
