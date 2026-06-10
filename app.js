@@ -337,6 +337,7 @@ function readImagesFromInput(input) {
 function saveToJson() {
   const data = collectFormData();
   const productCode = String(data.productCode || '').trim();
+  const productName = String(data.productName || '').trim();
 
   if (!productCode) {
     alert('Заполните поле «Код / артикул продукта» перед сохранением JSON.');
@@ -344,10 +345,16 @@ function saveToJson() {
     return;
   }
 
+  if (!productName) {
+    alert('Заполните поле «Наименование продукта» перед сохранением JSON.');
+    form.elements.productName.focus();
+    return;
+  }
+
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  const fileName = `${sanitizeFileName(productCode)}.json`;
+  const fileName = `${sanitizeFileName(productCode)}_${sanitizeFileName(productName)}.json`;
 
   link.href = url;
   link.download = fileName;
