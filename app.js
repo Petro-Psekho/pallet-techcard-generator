@@ -140,11 +140,11 @@ function validateData(data, calculations) {
 function renderTechCard(data, calculations, warnings) {
   techCard.innerHTML = `
     <h1 class="card-title">ТЕХНИЧЕСКАЯ КАРТА ПАЛЛЕТИРОВАНИЯ</h1>
-    <div class="card-meta">
-      <div><strong>Продукт:</strong> ${valueOrDash(data.productName)}</div>
-      <div><strong>Версия:</strong> ${valueOrDash(data.cardVersion)}</div>
-      <div><strong>Дата:</strong> ${formatDate(data.createdDate)}</div>
-    </div>
+    ${renderCardMeta([
+      ['Продукт', data.productName],
+      ['Версия', data.cardVersion],
+      ['Дата', formatDate(data.createdDate)]
+    ])}
 
     ${renderSection('1. Общая информация', [
       ['Наименование продукта', data.productName],
@@ -199,24 +199,24 @@ function renderTechCard(data, calculations, warnings) {
       ['Вес паллеты, кг', formatNumber(calculations.totalPalletWeight)],
       ['Схема укладки', data.palletPattern],
       ['Межслойные прокладки / фиксация', data.layerFixation],
-      ['Double stacking', data.doubleStacking ? 'Разрешено' : 'Не разрешено']
+      ['Double stacking', data.doubleStacking ? 'Разрешено' : '']
     ])}
 
     <section class="tech-section">
       <h2>7. Контрольный чек-лист</h2>
-      <ul class="check-list">
-        ${renderCheck('Проверена маркировка', data.qualityChecks.checkLabeling)}
-        ${renderCheck('Проверена целостность упаковки', data.qualityChecks.checkIntegrity)}
-        ${renderCheck('Проверены габариты паллеты', data.qualityChecks.checkDimensions)}
-        ${renderCheck('Проверен вес паллеты', data.qualityChecks.checkWeight)}
-        ${renderCheck('Проверена устойчивость паллеты', data.qualityChecks.checkStability)}
-      </ul>
+      ${renderChecklist([
+        ['Проверена маркировка', data.qualityChecks.checkLabeling],
+        ['Проверена целостность упаковки', data.qualityChecks.checkIntegrity],
+        ['Проверены габариты паллеты', data.qualityChecks.checkDimensions],
+        ['Проверен вес паллеты', data.qualityChecks.checkWeight],
+        ['Проверена устойчивость паллеты', data.qualityChecks.checkStability]
+      ])}
       ${renderSmallTable([['Дополнительные проверки', data.qualityNotes]])}
     </section>
 
     <section class="tech-section">
       <h2>8. Риски и ограничения</h2>
-      ${warnings.length ? renderWarnings(warnings) : '<div class="ok-note">Критические предупреждения не выявлены.</div>'}
+      ${warnings.length ? renderWarnings(warnings) : ''}
       ${renderSmallTable([
         ['Риски', data.risks],
         ['Ограничения', data.limitations],
@@ -353,11 +353,25 @@ function renderSection(title, rows) {
   `;
 }
 
+function renderCardMeta(rows) {
+  const filledRows = rows.filter(([, value]) => isRenderableValue(value));
+  if (!filledRows.length) return '';
+
+  return `
+    <div class="card-meta">
+      ${filledRows.map(([label, value]) => `<div><strong>${escapeHtml(label)}:</strong> ${formatMultiline(value)}</div>`).join('')}
+    </div>
+  `;
+}
+
 function renderSmallTable(rows) {
+  const filledRows = rows.filter(([, value]) => isRenderableValue(value));
+  if (!filledRows.length) return '';
+
   return `
     <table class="tech-table">
       <tbody>
-        ${rows.map(([label, value]) => `
+        ${filledRows.map(([label, value]) => `
           <tr>
             <th>${escapeHtml(label)}</th>
             <td>${formatMultiline(value)}</td>
@@ -380,9 +394,20 @@ function renderCheck(label, checked) {
   return `<li>${checked ? '☑' : '☐'} ${escapeHtml(label)}</li>`;
 }
 
+function renderChecklist(items) {
+  const checkedItems = items.filter(([, checked]) => checked);
+  if (!checkedItems.length) return '';
+
+  return `
+    <ul class="check-list">
+      ${checkedItems.map(([label, checked]) => renderCheck(label, checked)).join('')}
+    </ul>
+  `;
+}
+
 function renderImages(images) {
   if (!images || !images.length) {
-    return '<p>—</p>';
+    return '';
   }
 
   return `
@@ -440,6 +465,16 @@ function valueOrDash(value) {
   if (value === false) return 'Нет';
   if (value === null || value === undefined || value === '') return '—';
   return escapeHtml(String(value));
+}
+
+function isRenderableValue(value) {
+  if (value === false || value === null || value === undefined) return false;
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed !== '' && trimmed !== '—';
+  }
+  return true;
 }
 
 function formatMultiline(value) {
